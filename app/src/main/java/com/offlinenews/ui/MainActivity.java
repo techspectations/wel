@@ -203,7 +203,7 @@ public class MainActivity extends AppCompatActivity
                         NewsAdapter newsAdapter = new NewsAdapter(MainActivity.this, newsList);
                         newsRv.setAdapter(newsAdapter);
                         newsAdapter.notifyDataSetChanged();
-                        if (mProgressDialog.isShowing()) {
+                        if (mProgressDialog != null && mProgressDialog.isShowing()) {
                             mProgressDialog.dismiss();
                         }
                     } else {
@@ -255,7 +255,7 @@ public class MainActivity extends AppCompatActivity
 
     @Override
     public void onDataReceived(Object data) {
-        if (mProgressDialog.isShowing()) {
+        if (mProgressDialog != null && mProgressDialog.isShowing()) {
             mProgressDialog.dismiss();
         }
         Toast.makeText(MainActivity.this, "Data received", Toast.LENGTH_LONG).show();
