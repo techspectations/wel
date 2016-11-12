@@ -1,5 +1,11 @@
 package com.offlinenews.ui;
 
+import android.app.AlertDialog;
+import android.app.ProgressDialog;
+import android.content.Context;
+import android.content.DialogInterface;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.design.widget.NavigationView;
@@ -13,6 +19,7 @@ import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.ProgressBar;
 import android.widget.Toast;
 
 import com.bluelinelabs.logansquare.LoganSquare;
@@ -23,6 +30,7 @@ import com.offlinenews.adapters.NewsAdapter;
 import com.offlinenews.managers.APIManager;
 import com.offlinenews.models.Message;
 import com.offlinenews.models.NewsDetailVo;
+import com.offlinenews.utils.AlertUtils;
 
 import java.lang.reflect.Type;
 import java.util.ArrayList;
@@ -51,12 +59,28 @@ public class MainActivity extends AppCompatActivity
     private boolean isSender = false;
     private Handler handler;
     private RecyclerView newsRv;
+    private ProgressDialog mProgressDialog;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         handler = new Handler();
+
+        if (isNetworkAvailable()) {
+            mProgressDialog = AlertUtils.showDialog(this, "Loading news from online");
+        } else {
+            if (APIManager.newInstance().getNewsList().size() == 0) {
+                new AlertDialog.Builder(this)
+                        .setTitle("Offline Mode")
+                        .setMessage("You are offline, do you want to turn on client to search for nearby news chunky around?")
+                        .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
+                            public void onClick(DialogInterface dialog, int which) {
+                                initClient();
+                            }
+                        }).show();
+            }
+        }
 
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
@@ -71,20 +95,6 @@ public class MainActivity extends AppCompatActivity
 
         NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
-
-        findViewById(R.id.host).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                initHost();
-            }
-        });
-
-        findViewById(R.id.client).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                initClient();
-            }
-        });
     }
 
     private void initP2p(String instanceName) {
@@ -128,6 +138,7 @@ public class MainActivity extends AppCompatActivity
                             @Override
                             public void call() {
                                 Log.d(TAG, "We're now registered.");
+                                Toast.makeText(MainActivity.this, "Chunky found nearby.", Toast.LENGTH_LONG).show();
                             }
                         }, new SalutCallback() {
                             @Override
@@ -192,7 +203,9 @@ public class MainActivity extends AppCompatActivity
                         NewsAdapter newsAdapter = new NewsAdapter(MainActivity.this, newsList);
                         newsRv.setAdapter(newsAdapter);
                         newsAdapter.notifyDataSetChanged();
-                        newsAdapter.notifyDataSetChanged();
+                        if (mProgressDialog.isShowing()) {
+                            mProgressDialog.dismiss();
+                        }
                     } else {
                         Toast.makeText(MainActivity.this, "Return object null",
                                 Toast.LENGTH_LONG).show();
@@ -201,8 +214,6 @@ public class MainActivity extends AppCompatActivity
 
                 @Override
                 public void failure(RetrofitError error) {
-                    Toast.makeText(MainActivity.this, "Failed to fetch news article: " + error.getMessage(),
-                            Toast.LENGTH_LONG).show();
                 }
             });
         } else {
@@ -231,18 +242,10 @@ public class MainActivity extends AppCompatActivity
         // Handle navigation view item clicks here.
         int id = item.getItemId();
 
-        if (id == R.id.nav_camera) {
-            // Handle the camera action
-        } else if (id == R.id.nav_gallery) {
-
-        } else if (id == R.id.nav_slideshow) {
-
-        } else if (id == R.id.nav_manage) {
-
-        } else if (id == R.id.nav_share) {
-
-        } else if (id == R.id.nav_send) {
-
+        if (id == R.id.be_host) {
+            initHost();
+        } else if (id == R.id.be_client) {
+            initClient();
         }
 
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
@@ -252,6 +255,9 @@ public class MainActivity extends AppCompatActivity
 
     @Override
     public void onDataReceived(Object data) {
+        if (mProgressDialog.isShowing()) {
+            mProgressDialog.dismiss();
+        }
         Toast.makeText(MainActivity.this, "Data received", Toast.LENGTH_LONG).show();
         Log.d(TAG, "Received network data.");
         try {
@@ -293,5 +299,12 @@ public class MainActivity extends AppCompatActivity
                 e.printStackTrace();
             }
         }
+    }
+
+    private boolean isNetworkAvailable() {
+        ConnectivityManager connectivityManager
+                = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+        NetworkInfo activeNetworkInfo = connectivityManager.getActiveNetworkInfo();
+        return activeNetworkInfo != null && activeNetworkInfo.isConnected();
     }
 }

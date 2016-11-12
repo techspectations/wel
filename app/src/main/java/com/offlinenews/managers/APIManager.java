@@ -41,7 +41,7 @@ public class APIManager {
     int counter = 0;
 
     public void fetchNews(final Callback callback) {
-        mApiServices.getNewsArticles(Constants.AUTH_KEY, 0, 5, new Callback<NewsVo>() {
+        mApiServices.getNewsArticles(Constants.AUTH_KEY, 0, 15, new Callback<NewsVo>() {
             @Override
             public void success(final NewsVo newsVos, Response response) {
                 if (newsVos.getArticleSummary() != null) {
