@@ -148,12 +148,11 @@ public class MainActivity extends AppCompatActivity
                 public void run() {
                     if (APIManager.newInstance().getNewsList() != null &&
                             APIManager.newInstance().getNewsList().size() > 0) {
-                        Message myMessage = new Message();
-                        myMessage.newsDetailVo = convertToString(APIManager.newInstance().getNewsList());
+                        String newsDetailsList = convertToString(APIManager.newInstance().getNewsList());
 
                         if (meshNetwork != null) {
                             Log.d(TAG, "Sending data.");
-                            meshNetwork.sendToAllDevices(myMessage, new SalutCallback() {
+                            meshNetwork.sendToAllDevices(newsDetailsList, new SalutCallback() {
                                 @Override
                                 public void call() {
                                     Log.d(TAG, "Oh no! The data failed to send.");
@@ -169,12 +168,8 @@ public class MainActivity extends AppCompatActivity
     }
 
     private String convertToString(List<NewsDetailVo> list) {
-        String listString = "";
-
-        for (NewsDetailVo s : list) {
-            listString += s.toString() + "\t";
-        }
-        return listString;
+        Gson gson = new Gson();
+        return gson.toJson(list);
     }
 
     private void initNewsRv() {
@@ -260,12 +255,12 @@ public class MainActivity extends AppCompatActivity
         Toast.makeText(MainActivity.this, "Data received", Toast.LENGTH_LONG).show();
         Log.d(TAG, "Received network data.");
         try {
-            Message newMessage = (Message) LoganSquare.parse((String) data, Message.class);
-            Log.d(TAG, "Converting to string" + newMessage.newsDetailVo.toString());  //See you on the other side!
+            String newMessage = LoganSquare.parse((String) data, String.class);
+            Log.d(TAG, "Converting to string" + newMessage);  //See you on the other side!
 
             Type listType = new TypeToken<List<NewsDetailVo>>() {
             }.getType();
-            String json_str = newMessage.newsDetailVo;
+            String json_str = newMessage;
             List newsList = null;
             try {
                 newsList = new Gson().fromJson(json_str, listType);
